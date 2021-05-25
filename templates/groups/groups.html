@@ -1,0 +1,27 @@
+{% extends "header.html"%} {% block title %}Groups{% endblock %} {% block content %}
+</br>
+
+<div class="container">
+<table class="card shadow portfolio">
+    <tr>
+        <td>
+            <h1> List Of Groups:</h1>
+        </td>
+        <td>
+            <a type="button" href="{%url 'group-create'%}" class="btn btn-info">Create NEW Group</a>
+        </td>
+    </tr>
+</table>
+
+<ul class="list-group card shadow portfolio">
+    {% for g in group %}
+                <a href="{% url 'groups' %}{{ g.name }}">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{g}} 
+                    <span class="badge badge-primary badge-pill">{{ g.count }}</span> 
+                    </a>
+                </li>
+				{% endfor %}
+    		</ul>
+<div>
+{% endblock content %}

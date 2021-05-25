@@ -1,0 +1,33 @@
+{% extends "header.html"%}
+{% block title %}Update Profile{% endblock %}
+{% block content %}
+<br><br>
+<div class="card container">
+ <center>
+ <h3 class="card-title text-primary" >Update Profile</h3>
+ </center>
+    <form method="post" enctype='multipart/form-data'>
+        {% csrf_token %}
+        <p >Bio:    {{ form.bio }}</p>
+        <p> Phone    {{ form.phone }}</p>
+        <p> Website : {{ form.website }} </p>
+        <img id="pre" width="250px">
+        <p>{{ form.image }}</p> 
+        <script>
+            window.onload = function() {
+                document.getElementById("id_image").onchange = function(event) {
+                    var output = document.getElementById('pre');
+                    output.src = URL.createObjectURL(event.target.files[0]);
+                }
+            }
+            </script>
+            <center>
+            <button type="submit" class="btn btn-primary">Update</button>
+            <button type="cancel" class="btn btn-outline-primary" onclick="window.location='/'">Cancel</button>
+    </center></form>
+    <br>
+</div>
+
+
+
+{% endblock content %}
