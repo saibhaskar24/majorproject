@@ -12,12 +12,12 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_text
 from django.core.mail import EmailMessage , send_mail
 from django.views.generic import (
-	ListView,
-	DetailView,
-	CreateView,
-	UpdateView,
-	DeleteView,
-	FormView,
+    ListView,
+    DetailView,
+    CreateView,
+    UpdateView,
+    DeleteView,
+    FormView,
 )
 from django.contrib.auth.decorators import login_required
 from django import forms
@@ -28,15 +28,16 @@ from .forms import UserRegisterForm, EditProfileForm, EditBasicProfileForm, Comm
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from . import loader
 
 
 def index(request):
-	posts = Posts.objects.all().order_by('-date_posted')
-	groups = Branches.objects.all()
-	paginator = Paginator(posts, 10)
-	page = request.GET.get('page')
-	posts = paginator.get_page(page)
-	return render(request,'posts/index.html', {'posts': posts , 'groups':groups})
+    posts = Posts.objects.all().order_by('-date_posted')
+    groups = Branches.objects.all()
+    paginator = Paginator(posts, 10)
+    page = request.GET.get('page')
+    posts = paginator.get_page(page)
+    return render(request,'posts/index.html', {'posts': posts , 'groups':groups})
 
 @login_required
 def add_comment_to_post(request, pk):
@@ -45,6 +46,12 @@ def add_comment_to_post(request, pk):
         form = CommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
+            print(comment.text)
+            pred_out = loader.predict_review(comment.text)
+            print(pred_out)
+            if pred_out[0] == "N":
+                messages.error(request,"Sensitive word detected")
+                return redirect('post-detail', pk=pk)
             comment.post = post
             comment.author = request.user
             comment.save()
@@ -55,31 +62,31 @@ def add_comment_to_post(request, pk):
 
 
 def register(request):
-	if request.method == 'POST':
-		form = UserRegisterForm(request.POST)
-		if form.is_valid():
-			user = form.save(commit=False)
-			# user.is_active = False
-			user.save()
-			# current_site = get_current_site(request)
-			# mail_subject = 'Activate your blog account.'
-			# message = render_to_string('acc_active_email.html', {
+    if request.method == 'POST':
+        form = UserRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            # user.is_active = False
+            user.save()
+            # current_site = get_current_site(request)
+            # mail_subject = 'Activate your blog account.'
+            # message = render_to_string('acc_active_email.html', {
             #     'user': user,
             #     'domain': current_site.domain,
             #     'uid':urlsafe_base64_encode(force_bytes(user.pk)),
             #     'token':account_activation_token.make_token(user),
             # })
-			# to_email = form.cleaned_data.get('email')
-			# email = EmailMessage(mail_subject, message, to=[to_email])
-			# email.send()
-			# username = form.cleaned_data.get('username')
-			# messages.success(request, f'Account created for {username}!')
-			# messages.info(request, f'Please confirm your email address to complete the registration')
-			# return render(request,'email.html', {'to_email': to_email})
-			return redirect('index')
-	else:
-		form = UserRegisterForm()
-	return render(request, 'posts/register.html', {'form': form })
+            # to_email = form.cleaned_data.get('email')
+            # email = EmailMessage(mail_subject, message, to=[to_email])
+            # email.send()
+            # username = form.cleaned_data.get('username')
+            # messages.success(request, f'Account created for {username}!')
+            # messages.info(request, f'Please confirm your email address to complete the registration')
+            # return render(request,'email.html', {'to_email': to_email})
+            return redirect('index')
+    else:
+        form = UserRegisterForm()
+    return render(request, 'posts/register.html', {'form': form })
 
 def activate(request, uidb64, token):
     try:
@@ -134,80 +141,91 @@ def edit_basic_profile(request):
 
 
 class PostListView(ListView):
-	model = Posts
-	template_name = 'posts/index.html'
-	context_object_name = 'posts'
-	ordering = ['-date_posted']
+    model = Posts
+    template_name = 'posts/index.html'
+    context_object_name = 'posts'
+    ordering = ['-date_posted']
 
 class UserListView(ListView):
-	model = Posts
-	template_name = 'posts/user_posts.html'
-	context_object_name = 'posts'
-	ordering = ['-date_posted']
+    model = Posts
+    template_name = 'posts/user_posts.html'
+    context_object_name = 'posts'
+    ordering = ['-date_posted']
 
-	def get_queryset(self):
-		user = get_object_or_404(User, username=self.kwargs.get('username'))
-		return Posts.objects.filter(user=user).order_by('-date_posted')
+    def get_queryset(self):
+        user = get_object_or_404(User, username=self.kwargs.get('username'))
+        return Posts.objects.filter(user=user).order_by('-date_posted')
 
 class GListView(ListView):
-	model = Posts, Branches
-	template_name = 'groups/group_posts.html'
-	context_object_name = 'posts'
+    model = Posts, Branches
+    template_name = 'groups/group_posts.html'
+    context_object_name = 'posts'
 
-	def get_context_data(self, **kwargs):
-		name = get_object_or_404(Branches, name=self.kwargs.get('name'))
-		context = super(GListView, self).get_context_data(**kwargs)
-		context['groups'] = Branches.objects.filter(name = name)
-		return context
+    def get_context_data(self, **kwargs):
+        name = get_object_or_404(Branches, name=self.kwargs.get('name'))
+        context = super(GListView, self).get_context_data(**kwargs)
+        context['groups'] = Branches.objects.filter(name = name)
+        return context
 
-	def get_queryset(self):
-		name = get_object_or_404(Branches, name=self.kwargs.get('name'))
-		return Posts.objects.filter(groups=name).order_by('-date_posted')
+    def get_queryset(self):
+        name = get_object_or_404(Branches, name=self.kwargs.get('name'))
+        return Posts.objects.filter(groups=name).order_by('-date_posted')
 
 
 
 class PostDetailView(DetailView):
-	model = Posts
+    model = Posts
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
-	model = Posts
-	fields = ['groups','title', 'context','image']
-	def form_valid(self, form):
-		title = form.cleaned_data.get('title')
-		group = form.cleaned_data.get('groups')
-		obj = Branches.objects.filter(name=group)
-		val = obj.first().count
-		val+=1
-		obj.update(count=val)
-		messages.success(self.request, f'Post with title {title} Created!')
-		form.instance.user = self.request.user
-		return super().form_valid(form)
+    model = Posts
+    fields = ['groups','title', 'context','image']
+    def form_valid(self, form):
+        title = form.cleaned_data.get('title')
+        context = form.cleaned_data.get('context')
+        group = form.cleaned_data.get('groups')
+        pred_out = loader.predict_review(title)
+        print(pred_out)
+        if pred_out[0] == "N":
+            messages.error(self.request,"Sensitive word detected")
+            return redirect('post-create')
+        pred_out = loader.predict_review(context)
+        print(pred_out)
+        if pred_out[0] == "N":
+            messages.error(self.request,"Sensitive word detected")
+            return redirect('post-create')
+        obj = Branches.objects.filter(name=group)
+        val = obj.first().count
+        val+=1
+        obj.update(count=val)
+        messages.success(self.request, f'Post with title {title} Created!')
+        form.instance.user = self.request.user
+        return super().form_valid(form)
 
 
 class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-	model = Posts
-	fields = ['title', 'context','image']
-	def form_valid(self, form):
-		form.instance.user = self.request.user
-		return super().form_valid(form)
+    model = Posts
+    fields = ['title', 'context','image']
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
 
-	def test_func(self):
-		post = self.get_object()
-		if self.request.user == post.user:
-			return True
-		return False
+    def test_func(self):
+        post = self.get_object()
+        if self.request.user == post.user:
+            return True
+        return False
 
 
 class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-	model = Posts
-	success_url = '/'
+    model = Posts
+    success_url = '/'
 
-	def test_func(self):
-		post = self.get_object()
-		if self.request.user == post.user:
-			return True
-		return False
+    def test_func(self):
+        post = self.get_object()
+        if self.request.user == post.user:
+            return True
+        return False
 
 def searchposts(request):
     if request.method == 'GET':
