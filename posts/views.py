@@ -29,6 +29,10 @@ from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from . import loader
+from . import cnn_model
+from django.core.files.storage import FileSystemStorage
+
+fs = FileSystemStorage()
 
 
 def index(request):
@@ -184,6 +188,14 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         title = form.cleaned_data.get('title')
         context = form.cleaned_data.get('context')
         group = form.cleaned_data.get('groups')
+        image = form.cleaned_data.get('image')
+        filename = fs.save(image.name, image)
+        filename = fs.path(filename)
+        print(filename)
+        pred_out = cnn_model.predictImage(filename)
+        if pred_out == 0:
+            messages.error(self.request,"Sensitive image detected")
+            return redirect('post-create')
         pred_out = loader.predict_review(title)
         print(pred_out)
         if pred_out[0] == "N":
@@ -208,6 +220,7 @@ class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     fields = ['title', 'context','image']
     def form_valid(self, form):
         form.instance.user = self.request.user
+
         return super().form_valid(form)
 
     def test_func(self):
