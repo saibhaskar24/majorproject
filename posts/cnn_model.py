@@ -21,4 +21,4 @@ def predictImage(filename):
         return 1
 
 #/Users/pbbhsk/Documents/mycode/blogapp/images/bad/alcohol.jpg
-predictImage("/Users/pbbhsk/Documents/mycode/blogapp/images/bad/alcohol.jpg")
+# predictImage("/Users/pbbhsk/Documents/mycode/blogapp/images/bad/alcohol.jpg")

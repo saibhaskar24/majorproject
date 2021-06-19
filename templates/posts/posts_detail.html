@@ -28,8 +28,9 @@
     <a class="btn btn-primary" href="{% url 'add_comment_to_post' object.id %}">Add comment</a><br> {% endif %} {% for comment in object.comments.all %}
     <br>
     <div class="row">
-        <img src="{{ comment.author.userprofile.thumbnail.url }}" width="40" height="40" alt="Profile Image" style="border-radius: 50%;"> &nbsp;&nbsp;
         <div class="card border-left-0 border-right-0 border-top-0">
+        <img src="{{ comment.author.userprofile.thumbnail.url }}" width="40" height="40" alt="Profile Image" style="border-radius: 50%;"> &nbsp;&nbsp;
+
             <a class="card-subtitle font-weight-bold" href="{% url 'user-posts' comment.author %}">{{ comment.author }}</a>
             <div class="date text-muted">
                 {{ comment.created_date }}
